@@ -24,12 +24,12 @@ public class GUI extends JFrame {
     private JButton saveGameButton;
     private JButton loadGameButton;
 
-//    private boolean isGameActive = false;
     private GameState gameState;
     private JPanel boardPanel;
     private final DatabaseManager dbManager;
-	private WinChecker winChecker;
-    void initBoardPane(){
+    private WinChecker winChecker;
+
+    void initBoardPane() {
         // Initialize board panel with additional margin
         boardPanel = new JPanel() {
             @Override
@@ -56,13 +56,14 @@ public class GUI extends JFrame {
                 }
             }
         });
-
     }
-    void updateView(){
+
+    void updateView() {
         boardPanel.repaint();
         updateCurrentPlayerLabel();
     }
-    void initButtons(){
+
+    void initButtons() {
         // Initialize the Start/Restart Game button
         newGameButton = new JButton("New Game");
         newGameButton.setBounds(WIDTH - 200, 70, 120, 30);
@@ -72,64 +73,59 @@ public class GUI extends JFrame {
         newGameButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-//                startGameButton.setText("Restart Game");
                 resetGame();
                 updateCurrentPlayerLabel();
             }
         });
 
-        // initialize the Save Game button
+        // Initialize the Save Game button
         saveGameButton = new JButton("Save Game");
         saveGameButton.setBounds(WIDTH - 200, 120, 120, 30);
         add(saveGameButton);
 
-        //Action
+        // Action listener for Save Game button
         saveGameButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 dbManager.saveBoardState(board.getBoard());
             }
         });
-        //loadGameButton
-        loadGameButton = new JButton("load Game");
+
+        // Initialize the Load Game button
+        loadGameButton = new JButton("Load Game");
         loadGameButton.setBounds(WIDTH - 200, 170, 120, 30);
         add(loadGameButton);
 
-        //Action
+        // Action listener for Load Game button
         loadGameButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 ChessType[][] load_board = dbManager.loadLatestBoardState();
-                if(load_board == null){
+                if (load_board == null) {
                     System.out.println("No saved game found");
                     return;
                 }
                 board.loadBoard(load_board);
                 gameState = GameState.IN_PROGRESS;
-
-
-
                 updateView();
             }
         });
     }
 
-
-    void initDadabase(){
-        if(dbManager.doesTableExist("BoardState")){
+    void initDatabase() {
+        if (dbManager.doesTableExist("BoardState")) {
             System.out.println("BoardState Table exists");
-        }
-        else {
+        } else {
             dbManager.createBoardStateTable();
-            System.out.println("BoardState Table be created");
+            System.out.println("BoardState Table created");
         }
     }
+
     public GUI() {
         this.board = new Board();
         gameState = GameState.NOT_STARTED;
-		winChecker = new WinChecker();
+        winChecker = new WinChecker();
         dbManager = new DatabaseManager();
-//        initDadabase();
         setTitle("Gomoku Game");
         setLayout(null);  // Setting layout to null for manual positioning
         setSize(WIDTH, HEIGHT);
@@ -141,7 +137,6 @@ public class GUI extends JFrame {
         add(currentPlayerLabel);
 
         initButtons();
-
         initBoardPane();
 
         setVisible(true);
@@ -185,9 +180,12 @@ public class GUI extends JFrame {
         int mouseX = e.getX();
         int mouseY = e.getY();
 
+        // Declare i and j outside the loop for use later
+        int i = -1, j = -1;
+
         // Iterate over each intersection to check if the click is within radius
-        for (int i = 0; i < GRID_SIZE; i++) {
-            for (int j = 0; j < GRID_SIZE; j++) {
+        for (i = 0; i < GRID_SIZE; i++) {
+            for (j = 0; j < GRID_SIZE; j++) {
                 int centerX = j * CELL_SIZE + BOARD_MARGIN;
                 int centerY = i * CELL_SIZE + BOARD_MARGIN;
 
@@ -197,11 +195,15 @@ public class GUI extends JFrame {
                 // Check if the click is within the allowed radius
                 if (distance <= CLICK_RADIUS) {
                     if (board.get(i, j) == ChessType.EMPTY) {
-                        System.out.println("player: " + board.getCurrentPlayer() + " (" + i + ", " + j+")");
+                        System.out.println("player: " + board.getCurrentPlayer() + " (" + i + ", " + j + ")");
                         board.set(i, j, board.getCurrentPlayer());
-                        if(winChecker.checkWin(board,i,j,board.getCurrentPlayer())){
+                        if (winChecker.checkWin(board, i, j, board.getCurrentPlayer())) {
                             System.out.println("Winner: " + board.getWinner());
                             gameState = GameState.FINISHED;
+
+                            // Display winning message dialog
+                            String winner = board.getCurrentPlayer() == ChessType.BLACK ? "Black" : "White";
+                            JOptionPane.showMessageDialog(this, winner + " wins!", "Game Over", JOptionPane.INFORMATION_MESSAGE);
                         }
                         board.turnNextPlayer();
                     }
@@ -219,7 +221,6 @@ public class GUI extends JFrame {
     // Reset the game
     private void resetGame() {
         board.initBoard(); // Reset the board state
-        //reflash view
         updateView();
         gameState = GameState.IN_PROGRESS;
         System.out.println("Game reset.");
